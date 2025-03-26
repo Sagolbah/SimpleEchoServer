@@ -5,6 +5,7 @@ target/
 
 ### IntelliJ IDEA ###
 .idea/*
+.teamcity/.idea/**/*
 .idea/modules.xml
 .idea/jarRepositories.xml
 .idea/compiler.xml
