@@ -1,4 +1,7 @@
 import jetbrains.buildServer.configs.kotlin.*
+import jetbrains.buildServer.configs.kotlin.buildFeatures.perfmon
+import jetbrains.buildServer.configs.kotlin.buildSteps.maven
+import jetbrains.buildServer.configs.kotlin.triggers.vcs
 
 /*
 The settings script is an entry point for defining a TeamCity
@@ -25,9 +28,58 @@ To debug in IntelliJ Idea, open the 'Maven Projects' tool window (View
 version = "2025.03"
 
 project {
-    description="echo server project"
+    description = "echo server project"
+
+    // Define Build Configuration
+    buildType {
+        id("EchoServerBuild")
+        name = "Build Echo Server"
+
+        // VCS Settings
+        vcs {
+            root(DslContext.settingsRoot)
+        }
+
+        // Build Steps
+        steps {
+            // Clean and compile
+            maven {
+                name = "Clean and Compile"
+                goals = "clean compile"
+                runnerArgs = "-Dmaven.test.failure.ignore=true"
+            }
+
+            // Run tests
+            maven {
+                name = "Run Tests"
+                goals = "test"
+                runnerArgs = "-Dmaven.test.failure.ignore=true"
+            }
+
+            // Package application
+            maven {
+                name = "Package Application"
+                goals = "package"
+                runnerArgs = "-Dmaven.test.skip=true"
+            }
+        }
+
+        // Triggers
+        triggers {
+            vcs {
+                branchFilter = "+:*"
+            }
+        }
+
+        // Features
+        features {
+            perfmon {
+            }
+        }
+
+        // Artifacts
+        artifactRules = """
+            target/*.jar => artifacts
+        """.trimIndent()
+    }
 }
-
-
-
-
