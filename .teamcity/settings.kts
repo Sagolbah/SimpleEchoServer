@@ -1,21 +1,25 @@
 import jetbrains.buildServer.configs.kotlin.*
 import jetbrains.buildServer.configs.kotlin.buildSteps.maven
 import jetbrains.buildServer.configs.kotlin.triggers.vcs
+import jetbrains.buildServer.configs.kotlin.buildFeatures.perfmon
 
 /*
-Project DSL for SimpleEchoServer
+* Available context parameters:
+*
+* DslContext.settingsRoot - VCS root to use
 */
-
-version = "2023.05"
 
 project {
     description = "Simple Echo Server Project"
 
-    buildType(BuildConfiguration)
-    buildType(BuildConfigurationWithDependency)
+    val buildConfig = BuildConfiguration()
+    buildType(buildConfig)
+
+    val secondBuildConfig = SecondBuildConfiguration(buildConfig)
+    buildType(secondBuildConfig)
 }
 
-object BuildConfiguration : BuildType({
+class BuildConfiguration : BuildType({
     id("Build")
     name = "Build"
     description = "Builds the project with Maven"
@@ -24,12 +28,6 @@ object BuildConfiguration : BuildType({
         root(DslContext.settingsRoot)
     }
 
-    triggers {
-        vcs {
-            branchFilter = "+:*"
-        }
-    }
-
     steps {
         maven {
             goals = "clean package"
@@ -37,21 +35,36 @@ object BuildConfiguration : BuildType({
         }
     }
 
-    artifactRules = "target/*.jar => myArtifacts"
+    triggers {
+        vcs {
+        }
+    }
+
+    artifactRules = "target/*.jar => myArtifacts/"
+
+    features {
+        perfmon {}
+    }
 })
 
-object BuildConfigurationWithDependency : BuildType({
-    id("BuildWithDependency")
-    name = "Build With Dependency"
-    description = "Builds with dependency on the first build configuration"
+class SecondBuildConfiguration(dependency: BuildType) : BuildType({
+    id("SecondBuild")
+    name = "Second Build"
+    description = "Second build with dependencies on the first build"
 
     vcs {
         root(DslContext.settingsRoot)
     }
 
-    triggers {
-        vcs {
-            branchFilter = "+:*"
+    dependencies {
+        snapshot(dependency) {
+            reuseBuilds = ReuseBuilds.ANY
+            onDependencyFailure = FailureAction.FAIL_TO_START
+            onDependencyCancel = FailureAction.CANCEL
+        }
+
+        artifacts(dependency) {
+            artifactRules = "myArtifacts/*.jar => myArtifacts/"
         }
     }
 
@@ -62,31 +75,16 @@ object BuildConfigurationWithDependency : BuildType({
         }
     }
 
-    dependencies {
-        snapshot(BuildConfiguration) {
-            onDependencyFailure = FailureAction.FAIL_TO_START
-        }
-        
-        artifacts(BuildConfiguration) {
-            artifactRules = "myArtifacts/** => myArtifacts"
-        }
-    }
-
     artifactRules = """
         target/*.jar
-        myArtifacts/** => myArtifacts
+        myArtifacts/*.jar
     """.trimIndent()
 
-    features {
-        feature {
-            type = "teamcity.emailNotifier"
-            param("email", "sagolbah@gmail.com")
-            param("notifyBuildFailed", "true")
-            param("notifyBuildFailedToStart", "true")
-        }
-    }
-    
     failureConditions {
         executionTimeoutMin = 10
+    }
+
+    features {
+        perfmon {}
     }
 })
