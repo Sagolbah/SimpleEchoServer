@@ -1,12 +1,9 @@
 import jetbrains.buildServer.configs.kotlin.*
 import jetbrains.buildServer.configs.kotlin.buildSteps.maven
 import jetbrains.buildServer.configs.kotlin.triggers.vcs
-import jetbrains.buildServer.configs.kotlin.failureConditions.BuildFailureOnMetric
-import jetbrains.buildServer.configs.kotlin.failureConditions.failOnMetricChange
-import jetbrains.buildServer.configs.kotlin.buildFeatures.notifications
 
 /*
-* TeamCity DSL Script for SimpleEchoServer project
+Project DSL for SimpleEchoServer
 */
 
 version = "2023.05"
@@ -14,11 +11,12 @@ version = "2023.05"
 project {
     description = "Simple Echo Server Project"
 
-    buildType(Build)
-    buildType(BuildWithDependency)
+    buildType(BuildConfiguration)
+    buildType(BuildConfigurationWithDependency)
 }
 
-object Build : BuildType({
+object BuildConfiguration : BuildType({
+    id("Build")
     name = "Build"
     description = "Builds the project with Maven"
 
@@ -26,63 +24,69 @@ object Build : BuildType({
         root(DslContext.settingsRoot)
     }
 
-    steps {
-        maven {
-            name = "Maven Build"
-            goals = "clean package"
-            runnerArgs = "-Dmaven.test.failure.ignore=true"
+    triggers {
+        vcs {
+            branchFilter = "+:*"
         }
     }
 
-    triggers {
-        vcs {
+    steps {
+        maven {
+            goals = "clean package"
+            runnerArgs = "-Dmaven.test.failure.ignore=true"
         }
     }
 
     artifactRules = "target/*.jar => myArtifacts"
 })
 
-object BuildWithDependency : BuildType({
+object BuildConfigurationWithDependency : BuildType({
+    id("BuildWithDependency")
     name = "Build With Dependency"
-    description = "Builds the project with dependency on the first build"
+    description = "Builds with dependency on the first build configuration"
 
     vcs {
         root(DslContext.settingsRoot)
     }
 
+    triggers {
+        vcs {
+            branchFilter = "+:*"
+        }
+    }
+
     steps {
         maven {
-            name = "Maven Build"
             goals = "clean package"
             runnerArgs = "-Dmaven.test.failure.ignore=true"
         }
     }
 
     dependencies {
-        snapshot(Build) {
+        snapshot(BuildConfiguration) {
+            onDependencyFailure = FailureAction.FAIL_TO_START
         }
-
-        artifacts(Build) {
-            artifactRules = "myArtifacts/*.jar => myArtifacts"
-        }
-    }
-
-    failureConditions {
-        executionTimeoutMin = 10
-    }
-
-    features {
-        notifications {
-            notifierSettings = emailNotifier {
-                email = "sagolbah@gmail.com"
-            }
-            buildFailed = true
-            buildFailedToStart = true
+        
+        artifacts(BuildConfiguration) {
+            artifactRules = "myArtifacts/** => myArtifacts"
         }
     }
 
     artifactRules = """
         target/*.jar
-        myArtifacts/*.jar
+        myArtifacts/** => myArtifacts
     """.trimIndent()
+
+    features {
+        feature {
+            type = "teamcity.emailNotifier"
+            param("email", "sagolbah@gmail.com")
+            param("notifyBuildFailed", "true")
+            param("notifyBuildFailedToStart", "true")
+        }
+    }
+    
+    failureConditions {
+        executionTimeoutMin = 10
+    }
 })
