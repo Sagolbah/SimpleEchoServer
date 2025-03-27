@@ -10,7 +10,7 @@ version = "2023.05"
 
 project {
     description = "Simple Echo Server Project"
-    
+
     buildType(Build)
     buildType(BuildWithDependency)
 }
@@ -58,10 +58,14 @@ object BuildWithDependency : BuildType({
     dependencies {
         snapshot(Build) {
         }
-        
+
         artifacts(Build) {
             artifactRules = "myArtifacts/*.jar => myArtifacts"
         }
+    }
+
+    failureConditions {
+        executionTimeoutMin = 10
     }
 
     artifactRules = """
