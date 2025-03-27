@@ -80,7 +80,7 @@ project {
 
         // Artifacts
         artifactRules = """
-            target/*.jar => artifacts
+            target/*.jar => myArtifacts
         """.trimIndent()
     }
 
@@ -133,7 +133,8 @@ project {
 
         // Artifacts
         artifactRules = """
-            target/*.jar => artifacts
+            target/*.jar => myArtifacts
+            myArtifacts/** => .
         """.trimIndent()
 
         // Add snapshot dependency on the first build
@@ -144,7 +145,7 @@ project {
 
             // Add artifact dependency on the first build
             artifacts(echoServerBuild) {
-                artifactRules = "target/*.jar => artifacts"
+                artifactRules = "target/*.jar => myArtifacts"
             }
         }
     }
