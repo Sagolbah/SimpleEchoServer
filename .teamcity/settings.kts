@@ -141,6 +141,11 @@ project {
             snapshot(echoServerBuild) {
                 onDependencyFailure = FailureAction.FAIL_TO_START
             }
+
+            // Add artifact dependency on the first build
+            artifacts(echoServerBuild) {
+                artifactRules = "target/*.jar => artifacts"
+            }
         }
     }
 }
