@@ -3,6 +3,7 @@ import jetbrains.buildServer.configs.kotlin.buildSteps.maven
 import jetbrains.buildServer.configs.kotlin.triggers.vcs
 import jetbrains.buildServer.configs.kotlin.failureConditions.BuildFailureOnMetric
 import jetbrains.buildServer.configs.kotlin.failureConditions.failOnMetricChange
+import jetbrains.buildServer.configs.kotlin.buildFeatures.notifications
 
 /*
 * TeamCity DSL Script for SimpleEchoServer project
@@ -71,11 +72,12 @@ object BuildWithDependency : BuildType({
     }
 
     features {
-        feature {
-            type = "notifier"
-            param("notifier.enabled", "true")
-            param("notifier.event.buildFailed", "true")
-            param("notifier.email.recipients", "sagolbah@gmail.com")
+        notifications {
+            notifierSettings = emailNotifier {
+                email = "sagolbah@gmail.com"
+            }
+            buildFailed = true
+            buildFailedToStart = true
         }
     }
 
